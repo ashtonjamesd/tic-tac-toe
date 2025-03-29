@@ -31,6 +31,6 @@ typedef struct {
 } GameState;
 
 extern void run_game(GameState *game);
-extern GameState *init_game(GameMode mode);
+extern GameState *init_game(GameMode mode, int turn);
 
 #endif
