@@ -169,74 +169,67 @@ void computer_random_move(GameState *game) {
   }
 }
 
-static int evaluate_game(GameState *game) {
+int evaluate_game(GameState *game) {
   for (int i = 0; i < GRID_SIZE; i++) {
     if (square(game, i, 0) != EMPTY && square(game, i, 0) == square(game, i, 1) && square(game, i, 1) == square(game, i, 2)) {
-      return square(game, i, 0) == CROSS ? 1 : -1;
+      return (square(game, i, 0) == CROSS) ? 10 : -10;
     }
-  }
-
-  // check columns
-  for (int i = 0; i < GRID_SIZE; i++) {
     if (square(game, 0, i) != EMPTY && square(game, 0, i) == square(game, 1, i) && square(game, 1, i) == square(game, 2, i)) {
-      return square(game, 0, i) == CROSS ? 1 : -1;
+      return (square(game, 0, i) == CROSS) ? 10 : -10;
     }
   }
 
-  // diagonals
   if (square(game, 0, 0) != EMPTY && square(game, 0, 0) == square(game, 1, 1) && square(game, 1, 1) == square(game, 2, 2)) {
-    return square(game, 0, 0) == CROSS ? 1 : -1;
+    return (square(game, 0, 0) == CROSS) ? 10 : -10;
   }
   if (square(game, 0, 2) != EMPTY && square(game, 0, 2) == square(game, 1, 1) && square(game, 1, 1) == square(game, 2, 0)) {
-    return square(game, 0, 2) == CROSS ? 1 : -1;
+    return (square(game, 0, 2) == CROSS) ? 10 : -10;
   }
 
-  int is_draw = 1;
   for (int i = 0; i < GRID_SIZE; i++) {
     for (int j = 0; j < GRID_SIZE; j++) {
-      if (square(game, j, i) == EMPTY) {
-        is_draw = 0;
-        break;
+      if (square(game, i, j) == EMPTY) {
+        return 0;
       }
     }
   }
-
-  if (is_draw) return 0;
+  
   return 0;
 }
 
-int minimax(GameState *game, int depth, int is_computer_turn) {
+int minimax(GameState *game, int depth, int is_computer_turn, int alpha, int beta) {
   int score = evaluate_game(game);
 
-  if (score == 1 || score == -1 || score == 0) {
-    return score;
+  if (score == 10 || score == -10 || depth == 0) {
+    return score - depth;
   }
 
   if (is_computer_turn) {
     int best_value = -1000;
-
     for (int i = 0; i < GRID_SIZE; i++) {
       for (int j = 0; j < GRID_SIZE; j++) {
         if (square(game, i, j) == EMPTY) {
           game->board[i][j] = CROSS;
-          int current_value = minimax(game, depth + 1, 0);
-          best_value = (current_value > best_value) ? current_value : best_value;
+          int value = minimax(game, depth - 1, 0, alpha, beta);
           game->board[i][j] = EMPTY;
+          best_value = (value > best_value) ? value : best_value;
+          alpha = (alpha > best_value) ? alpha : best_value;
+          if (beta <= alpha) return best_value;
         }
       }
     }
     return best_value;
-  }
-  else {
+  } else {
     int best_value = 1000;
-
     for (int i = 0; i < GRID_SIZE; i++) {
       for (int j = 0; j < GRID_SIZE; j++) {
         if (square(game, i, j) == EMPTY) {
           game->board[i][j] = NOUGHT;
-          int current_value = minimax(game, depth + 1, 1);
-          best_value = (current_value < best_value) ? current_value : best_value;
+          int value = minimax(game, depth - 1, 1, alpha, beta);
           game->board[i][j] = EMPTY;
+          best_value = (value < best_value) ? value : best_value;
+          beta = (beta < best_value) ? beta : best_value;
+          if (beta <= alpha) return best_value;
         }
       }
     }
@@ -244,7 +237,7 @@ int minimax(GameState *game, int depth, int is_computer_turn) {
   }
 }
 
-static void computer_best_move(GameState *game) {
+void computer_best_move(GameState *game) {
   int best_value = -1000;
   int best_x_pos = -1;
   int best_y_pos = -1;
@@ -253,7 +246,7 @@ static void computer_best_move(GameState *game) {
     for (int j = 0; j < GRID_SIZE; j++) {
       if (square(game, i, j) == EMPTY) {
         game->board[i][j] = CROSS;
-        int move_value = minimax(game, 0, 0);
+        int move_value = minimax(game, 9, 0, -1000, 1000);
         game->board[i][j] = EMPTY;
 
         if (move_value > best_value) {
@@ -267,9 +260,9 @@ static void computer_best_move(GameState *game) {
 
   game->x_pos = best_x_pos;
   game->y_pos = best_y_pos;
-
   play_turn(game);
 }
+
 
 static void turn(GameState *game) {
   if (game->mode == COMPUTER_RANDOM && game->turn == COMPUTER_TURN) {
